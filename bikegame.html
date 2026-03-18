@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Bike Rider Game</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+<style>
+body {
+    margin: 0;
+    background: #111;
+    display: flex;
+    justify-content: center;
+    font-family: Arial;
+}
+
+#container {
+    width: 300px;
+}
+
+#scoreBoard {
+    color: white;
+    text-align: center;
+    padding: 10px;
+    font-size: 18px;
+}
+
+#game {
+    width: 300px;
+    height: 500px;
+    background: #555;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Road animation */
+.road-line {
+    width: 10px;
+    height: 60px;
+    background: white;
+    position: absolute;
+    left: 145px;
+}
+
+/* Bike */
+#player {
+    width: 40px;
+    height: 70px;
+    position: absolute;
+    bottom: 20px;
+    left: 130px;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="70"><rect x="10" y="10" width="20" height="40" fill="red"/><circle cx="12" cy="60" r="6" fill="black"/><circle cx="28" cy="60" r="6" fill="black"/></svg>');
+    background-size: cover;
+}
+
+/* Obstacle */
+.obstacle {
+    width: 40px;
+    height: 70px;
+    background: black;
+    position: absolute;
+    top: -80px;
+}
+
+/* Mobile buttons */
+#controls {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+}
+
+.btn {
+    width: 145px;
+    padding: 15px;
+    font-size: 20px;
+    background: #ff9800;
+    border: none;
+    border-radius: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="container">
+    <div id="scoreBoard">
+        Score: <span id="score">0</span> |
+        High Score: <span id="highScore">0</span>
+    </div>
+
+    <div id="game">
+        <div id="player"></div>
+    </div>
+
+    <div id="controls">
+        <button class="btn" id="leftBtn">⬅️</button>
+        <button class="btn" id="rightBtn">➡️</button>
+    </div>
+</div>
+
+<!-- Sound Effects -->
+<audio id="startSound" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQgAAAAA"></audio>
+<audio id="crashSound" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQgAAAAA"></audio>
+
+<script>
+let game = document.getElementById("game");
+let player = document.getElementById("player");
+let scoreText = document.getElementById("score");
+let highScoreText = document.getElementById("highScore");
+
+let playerLeft = 130;
+let speed = 4;
+let score = 0;
+let gameOver = false;
+
+let highScore = localStorage.getItem("bikeHighScore") || 0;
+highScoreText.innerText = highScore;
+
+// Fullscreen on mobile touch
+game.addEventListener("click", () => {
+    if (game.requestFullscreen) game.requestFullscreen();
+});
+
+/* Keyboard control */
+document.addEventListener("keydown", e => {
+    if (e.key === "ArrowLeft") moveLeft();
+    if (e.key === "ArrowRight") moveRight();
+});
+
+/* Touch control */
+document.getElementById("leftBtn").addEventListener("touchstart", moveLeft);
+document.getElementById("rightBtn").addEventListener("touchstart", moveRight);
+
+function moveLeft() {
+    if (playerLeft > 0) {
+        playerLeft -= 20;
+        player.style.left = playerLeft + "px";
+    }
+}
+function moveRight() {
+    if (playerLeft < 260) {
+        playerLeft += 20;
+        player.style.left = playerLeft + "px";
+    }
+}
+
+/* Road animation */
+function createRoadLine(y) {
+    let line = document.createElement("div");
+    line.className = "road-line";
+    line.style.top = y + "px";
+    game.appendChild(line);
+
+    let move = setInterval(() => {
+        line.style.top = line.offsetTop + speed + "px";
+        if (line.offsetTop > 500) {
+            clearInterval(move);
+            line.remove();
+        }
+    }, 20);
+}
+
+setInterval(() => {
+    for (let i = 0; i < 5; i++) createRoadLine(i * -120);
+}, 600);
+
+/* Obstacles */
+function createObstacle() {
+    if (gameOver) return;
+
+    let obs = document.createElement("div");
+    obs.className = "obstacle";
+    obs.style.left = Math.floor(Math.random() * 260) + "px";
+    game.appendChild(obs);
+
+    let move = setInterval(() => {
+        obs.style.top = obs.offsetTop + speed + "px";
+
+        if (
+            obs.offsetTop > 350 &&
+            obs.offsetTop < 440 &&
+            Math.abs(obs.offsetLeft - playerLeft) < 40
+        ) {
+            gameOver = true;
+            document.getElementById("crashSound").play();
+
+            if (score > highScore) {
+                localStorage.setItem("bikeHighScore", score);
+            }
+
+            alert("Game Over\nScore: " + score);
+            location.reload();
+        }
+
+        if (obs.offsetTop > 500) {
+            clearInterval(move);
+            obs.remove();
+            score++;
+            scoreText.innerText = score;
+
+            if (score % 5 === 0) speed++;
+        }
+    }, 20);
+}
+
+setInterval(createObstacle, 1200);
+</script>
+
+</body>
+</html>
